@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Embedded YouTube Video</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        .embed-responsive {
+            max-width: 320px;
+            margin-bottom: 20px;
+        }
+
+        .player-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .player-row > .player-col {
+            flex-basis: 23%;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-group">
+        <label for="video-url">Video URL:</label>
+        <input type="text" id="video-url" class="form-control" placeholder="Enter video URL">
+    </div>
+    <div class="form-group">
+        <label for="num-players">Number of Players:</label>
+        <input type="number" id="num-players" class="form-control" min="1" max="10" value="1">
+    </div>
+    <div class="form-group">
+        <label for="reload-time">Reload Time (in minutes):</label>
+        <input type="number" id="reload-time" class="form-control" min="1" max="60" value="1">
+    </div>
+    <div id="players-container" class="player-row"></div>
+
+    <button id="play-button" class="btn btn-primary">Play</button>
+    <button id="stop-button" class="btn btn-danger">Stop</button>
+
+    <script>
+        var videoUrlInput = document.getElementById("video-url");
+        var numPlayersInput = document.getElementById("num-players");
+        var reloadTimeInput = document.getElementById("reload-time");
+        var playersContainer = document.getElementById("players-container");
+        var playButton = document.getElementById("play-button");
+        var stopButton = document.getElementById("stop-button");
+
+        var players = [];
+        var reloadIntervalId;
+
+        function createPlayer(videoUrl) {
+            var playerDiv = document.createElement("div");
+            playerDiv.className = "player-col embed-responsive embed-responsive-16by9";
+            playerDiv.innerHTML = '<iframe class="embed-responsive-item" src="' + videoUrl + '"></iframe>';
+            playersContainer.appendChild(playerDiv);
+            return playerDiv;
+        }
+
+        function reloadPlayers() {
+            players.forEach(function(player) {
+                var videoUrl = player.getAttribute("data-video-url");
+                var iframe = player.querySelector("iframe");
+                iframe.src = videoUrl;
+            });
+        }
+
+        function startReloadTimer() {
+            var reloadTime = parseInt(reloadTimeInput.value) * 60 * 1000; // Convert minutes to milliseconds
+            reloadIntervalId = setInterval(reloadPlayers, reloadTime);
+        }
+
+        playButton.addEventListener("click", function() {
+            var videoUrl = videoUrlInput.value;
+            var numPlayers = parseInt(numPlayersInput.value);
+
+            if (videoUrl !== "" && numPlayers > 0) {
+                playersContainer.innerHTML = "";
+                players = [];
+
+                var videoId = extractVideoId(videoUrl);
+                var videoSrc = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&mute=1&vq=small&controls=0';
+
+                for (var i = 0; i < numPlayers; i++) {
+                    var player = createPlayer(videoSrc);
+                    player.setAttribute("data-video-url", videoSrc);
+                    players.push(player);
+                }
+
+                startReloadTimer();
+            }
+        });
+
+        stopButton.addEventListener("click", function() {
+            clearInterval(reloadIntervalId);
+            playersContainer.innerHTML = "";
+            players = [];
+        });
+
+        function extractVideoId(url) {
+            var videoId = "";
+            var match = url.match(/[?&]v=([^&]+)/);
+            if (match) {
+                videoId = match[1];
+            } else {
+                match = url.match(/youtu\.be\/([^&]+)/);
+                if (match) {
+                    videoId = match[1];
+                }
+            }
+            return videoId;
+        }
+    </script>
+</body>
+</html>
